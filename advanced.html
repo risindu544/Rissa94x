@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="rissa_94x">
+    <meta name="description" content="SQL Dumper Advanced - Database Extraction Tool by rissa_94x">
+    <title>SQL Dumper Advanced</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            color: #00ff41;
+            overflow: hidden;
+        }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 200px 1fr 1fr;
+            grid-template-rows: 100px 1fr 150px;
+            height: 100vh;
+            gap: 5px;
+            padding: 5px;
+        }
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto auto;
+            }
+            .sidebar { grid-column: 1; grid-row: 2; }
+            .left-panel { grid-column: 1; grid-row: 3; }
+            .right-panel { grid-column: 1; grid-row: 4; }
+        }
+        .header {
+            grid-column: 1/-1;
+            background: #1a1f3a;
+            border: 2px solid #ff0055;
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            border-radius: 3px;
+        }
+        .header h1 { font-size: 1.2em; margin-right: 20px; }
+        .header input, .header select {
+            padding: 8px;
+            background: #0a0e27;
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            border-radius: 3px;
+        }
+        .header button {
+            padding: 8px 12px;
+            background: #ff0055;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .header button:hover { background: #ff0066; }
+        .sidebar {
+            grid-column: 1;
+            grid-row: 2;
+            background: #1a1f3a;
+            border: 1px solid #00ff41;
+            border-radius: 3px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .sidebar-btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 5px;
+            background: #0a0e27;
+            border: 1px solid #00ff4133;
+            color: #00ff41;
+            cursor: pointer;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            text-align: left;
+        }
+        .sidebar-btn:hover { background: #1a2f4a; border-color: #00ff41; }
+        .left-panel {
+            grid-column: 2;
+            grid-row: 2;
+            background: #1a1f3a;
+            border: 1px solid #00ff41;
+            border-radius: 3px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .right-panel {
+            grid-column: 3;
+            grid-row: 2;
+            background: #1a1f3a;
+            border: 1px solid #00ff41;
+            border-radius: 3px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .console {
+            grid-column: 1/-1;
+            grid-row: 3;
+            background: #1a1f3a;
+            border: 1px solid #00ff41;
+            border-radius: 3px;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 0.85em;
+        }
+        .console-line { margin: 2px 0; }
+        .success { color: #00ff41; }
+        .error { color: #ff0055; }
+        .info { color: #00aaff; }
+        .warning { color: #ffaa00; }
+        .item {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #0a0e27;
+            border: 1px solid #00ff4133;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .item:hover { background: #1a2f4a; border-color: #00ff41; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+        th, td { border: 1px solid #00ff4133; padding: 6px; text-align: left; }
+        th { background: #0a0e27; font-weight: bold; }
+        tr:hover { background: #1a2f4a; }
+        .stats-box {
+            background: #0a0e27;
+            border: 1px solid #00ff41;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            background: #0a0e27;
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            border-radius: 3px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-grid">
+        <div class="header">
+            <h1>⚡ SQL DUMPER <span style="font-size: 0.7em; color: #ffaa00;">(by rissa_94x)</span></h1>
+            <input type="text" id="host" placeholder="hostname" style="width: 150px;">
+            <select id="dbType" style="width: 100px;">
+                <option value="mysql">MySQL</option>
+                <option value="postgresql">PostgreSQL</option>
+                <option value="sqlite">SQLite</option>
+                <option value="mongodb">MongoDB</option>
+            </select>
+            <input type="text" id="connString" placeholder="connection" style="flex: 1; min-width: 200px;">
+            <button onclick="detectDB()">Detect</button>
+            <button onclick="connectDB()">Connect</button>
+            <span id="status" style="color:#ffaa00; font-size: 0.9em;"></span>
+        </div>
+
+        <div class="sidebar">
+            <div style="margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #00ff41; font-weight: bold;">Actions</div>
+            <button class="sidebar-btn" onclick="getUsers()">👤 Users</button>
+            <button class="sidebar-btn" onclick="getAllDbs()">📚 DBs</button>
+            <button class="sidebar-btn" onclick="findSensitive()">🔐 Sensitive</button>
+            <button class="sidebar-btn" onclick="dumpStats()">📊 Stats</button>
+            <button class="sidebar-btn" onclick="showRawQuery()">💻 Query</button>
+            <button class="sidebar-btn" onclick="clearLogs()">🗑️ Clear</button>
+        </div>
+
+        <div class="left-panel">
+            <h3 style="margin-bottom: 10px;">📊 TABLES</h3>
+            <div id="tablesList"></div>
+        </div>
+
+        <div class="right-panel">
+            <h3 style="margin-bottom: 10px;">📋 DATA</h3>
+            <div id="dataViewer"></div>
+        </div>
+
+        <div class="console">
+            <h3 style="margin-bottom: 8px;">🖥️ CONSOLE</h3>
+            <div id="consoleLogs" style="height: 120px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentDb = null;
+        const API_KEY = 'default-key-change-in-production';
+
+        function log(msg, type = 'info') {
+            const logs = document.getElementById('consoleLogs');
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logs.appendChild(line);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function detectDB() {
+            const host = document.getElementById('host').value;
+            if (!host) { log('No host provided', 'error'); return; }
+            try {
+                const res = await fetch('/api/detect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+                    body: JSON.stringify({ host })
+                });
+                const data = await res.json();
+                log(`Detection: ${JSON.stringify(data)}`, 'success');
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function connectDB() {
+            const dbType = document.getElementById('dbType').value;
+            const connString = document.getElementById('connString').value;
+            if (!connString) { log('No connection string', 'error'); return; }
+            try {
+                const res = await fetch('/api/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+                    body: JSON.stringify({ db_type: dbType, connection_string: connString })
+                });
+                const data = await res.json();
+                if (data.status === 'connected') {
+                    currentDb = dbType;
+                    document.getElementById('status').textContent = `✓ ${data.banner}`;
+                    log(`Connected! DBA: ${data.is_dba}`, 'success');
+                    loadTables();
+                } else {
+                    log('Connection failed: ' + data.error, 'error');
+                }
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function loadTables() {
+            try {
+                const res = await fetch('/api/tables', {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                const data = await res.json();
+                const list = document.getElementById('tablesList');
+                list.innerHTML = '';
+                data.tables.forEach(table => {
+                    const div = document.createElement('div');
+                    div.className = 'item';
+                    div.textContent = table;
+                    div.onclick = () => dumpTableData(table);
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function dumpTableData(table) {
+            try {
+                const res = await fetch(`/api/dump/${table}?limit=500`, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                const data = await res.json();
+                displayTableData(data);
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        function displayTableData(data) {
+            const viewer = document.getElementById('dataViewer');
+            viewer.innerHTML = `<h4>${data.table} (${data.rows} rows)</h4>`;
+            
+            if (data.data.length === 0) return;
+            
+            const table = document.createElement('table');
+            const headers = Object.keys(data.data[0]);
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headers.forEach(h => {
+                const th = document.createElement('th');
+                th.textContent = h;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            data.data.slice(0, 50).forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(h => {
+                    const td = document.createElement('td');
+                    td.textContent = row[h] !== null ? String(row[h]).substring(0, 50) : 'NULL';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            viewer.appendChild(table);
+
+            const exportDiv = document.createElement('div');
+            exportDiv.style.marginTop = '10px';
+            exportDiv.innerHTML = `
+                <button class="sidebar-btn" onclick="window.location.href='/api/export/${data.table}/json'" style="width: 48%; display: inline-block;">JSON</button>
+                <button class="sidebar-btn" onclick="window.location.href='/api/export/${data.table}/csv'" style="width: 48%; display: inline-block; margin-left: 2%;">CSV</button>
+            `;
+            viewer.appendChild(exportDiv);
+        }
+
+        async function getUsers() {
+            try {
+                const res = await fetch('/api/users', {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                const data = await res.json();
+                const viewer = document.getElementById('dataViewer');
+                viewer.innerHTML = '<h4>Database Users</h4>';
+                const table = document.createElement('table');
+                table.innerHTML = '<tr><th>User</th><th>Info</th></tr>';
+                data.users.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${u.user || u.usename}</td><td>${u.host || (u.is_super ? 'SUPERUSER' : 'normal')}</td>`;
+                    table.appendChild(tr);
+                });
+                viewer.appendChild(table);
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function findSensitive() {
+            try {
+                const res = await fetch('/api/sensitive', {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                const data = await res.json();
+                const viewer = document.getElementById('dataViewer');
+                viewer.innerHTML = '<h4>Sensitive Data Locations</h4>';
+                Object.keys(data.sensitive).forEach(table => {
+                    const div = document.createElement('div');
+                    div.className = 'stats-box';
+                    div.innerHTML = `<strong>${table}</strong><br>${data.sensitive[table].join(', ')}`;
+                    viewer.appendChild(div);
+                });
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function dumpStats() {
+            try {
+                const res = await fetch('/api/stats', {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                const data = await res.json();
+                const viewer = document.getElementById('dataViewer');
+                viewer.innerHTML = `
+                    <div class="stats-box">
+                        <div><strong>Total Tables:</strong> ${data.total_tables}</div>
+                        <div><strong>Total Rows:</strong> ${data.total_rows}</div>
+                        <div><strong>Largest:</strong> ${data.largest_table.name} (${data.largest_table.rows} rows)</div>
+                    </div>
+                `;
+                const table = document.createElement('table');
+                table.innerHTML = '<tr><th>Table</th><th>Rows</th></tr>';
+                data.table_breakdown.sort((a,b) => b.rows - a.rows).slice(0, 20).forEach(t => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${t.table}</td><td>${t.rows}</td>`;
+                    table.appendChild(tr);
+                });
+                viewer.appendChild(table);
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        function showRawQuery() {
+            const viewer = document.getElementById('dataViewer');
+            viewer.innerHTML = `
+                <h4>Execute Raw SQL</h4>
+                <textarea id="rawQuery" placeholder="SELECT * FROM table;"></textarea>
+                <button class="sidebar-btn" onclick="executeRaw()" style="margin-top: 10px;">Execute</button>
+            `;
+        }
+
+        async function executeRaw() {
+            const query = document.getElementById('rawQuery').value;
+            try {
+                const res = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+                    body: JSON.stringify({ query })
+                });
+                const result = await res.json();
+                const viewer = document.getElementById('dataViewer');
+                if (Array.isArray(result) && result.length > 0) {
+                    viewer.innerHTML = '<h4>Results</h4>';
+                    const table = document.createElement('table');
+                    const headers = Object.keys(result[0]);
+                    table.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                    result.slice(0, 100).forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = headers.map(h => `<td>${row[h]}</td>`).join('');
+                        table.appendChild(tr);
+                    });
+                    viewer.appendChild(table);
+                } else {
+                    viewer.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                }
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        function getAllDbs() {
+            if (currentDb === 'mysql') {
+                document.getElementById('rawQuery').value = 'SHOW DATABASES;';
+                executeRaw();
+            } else {
+                log('Only works with MySQL', 'warning');
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('consoleLogs').innerHTML = '';
+            log('Logs cleared', 'success');
+        }
+
+        log('SQL Dumper Ready', 'success');
+    </script>
+</body>
+</html>
